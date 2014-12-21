@@ -1,0 +1,66 @@
+---
+title: "Machine learning - write up"
+output: html_document
+---
+
+Lets start by loading R packages.
+
+```{r, echo=FALSE}
+set.seed(1)
+library(caret)
+```
+
+Next load training and testing data.
+
+```{r}
+training <- read.csv('pml-training.csv')
+testing <- read.csv('pml-testing.csv')
+```
+
+Look at the training and tesing data. It is easy to see that in testing there is plenty of columns NA. Lets get rid of those.
+
+```{r}
+filterNA <-testing[,colSums(is.na(testing)) != nrow(testing)]
+importantColumns <- names(filterNA)
+importantColumns <- append(importantColumns, "classe")
+trainingFiltered <- training[, names(training) %in% importantColumns]
+trainingFiltered <- na.omit(trainingFiltered)
+length(importantColumns)
+```
+
+Number of columns went down to 61. However there is still more than 19000 rows in training. Lets reduce it to something reasonable smaller subset.
+
+```{r}
+trainingSample <- trainingFiltered[sample(1:nrow(trainingFiltered), 200, replace=FALSE),]
+```
+
+Data are not really linear. Train with random forest.
+
+```{r}
+trainingFit <- train(classe ~ ., data = trainingSample, method = "rf", prox=TRUE)
+trainingFit
+```
+
+On the training data it works with nice accuracy:
+
+```{r}
+trainingFit$results$Accuracy
+```
+
+Lets see how many from the training set were missplaced.
+
+```{r}
+pred <- predict(trainingFit, newdata = training);
+training$predRight <- pred==training$classe
+table(pred,training$classe)
+```
+
+Since the sample was only a small part out of all training data this is more than great result. This can be reduce more by training on bigger sample. 
+
+Apply prediction model to testing data.
+
+```{r}
+predict(trainingFit, newdata=testing)
+```
+
+Strange that all belong to the same class. Perhaps on purpose.
