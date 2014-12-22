@@ -56,6 +56,8 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 
 
 <p>Lets start by loading R packages.</p>
+<pre class="r"><code>set.seed(1)
+library(caret)</code></pre>
 <pre><code>## Loading required package: lattice
 ## Loading required package: ggplot2</code></pre>
 <p>Next load training and testing data.</p>
@@ -69,8 +71,10 @@ trainingFiltered &lt;- training[, names(training) %in% importantColumns]
 trainingFiltered &lt;- na.omit(trainingFiltered)
 length(importantColumns)</code></pre>
 <pre><code>## [1] 61</code></pre>
-<p>Number of columns went down to 61. However there is still more than 19000 rows in training. Lets reduce it to something reasonable smaller subset.</p>
-<pre class="r"><code>trainingSample &lt;- trainingFiltered[sample(1:nrow(trainingFiltered), 200, replace=FALSE),]</code></pre>
+<p>Number of columns went down to 61. However there is still more than 19000 rows in training. Lets reduce it to something reasonable smaller subset and keep the rest.</p>
+<pre class="r"><code>sample &lt;- sample(1:nrow(trainingFiltered), 200, replace=FALSE)
+trainingSample &lt;- trainingFiltered[sample,]
+trainingUsedForTesting &lt;- trainingFiltered[-sample,]</code></pre>
 <p>Data are not really linear. Train with random forest.</p>
 <pre class="r"><code>trainingFit &lt;- train(classe ~ ., data = trainingSample, method = &quot;rf&quot;, prox=TRUE)</code></pre>
 <pre><code>## Loading required package: randomForest
@@ -101,18 +105,21 @@ length(importantColumns)</code></pre>
 <pre class="r"><code>trainingFit$results$Accuracy</code></pre>
 <pre><code>## [1] 0.7263727 0.9852153 0.9867845</code></pre>
 <p>Lets see how many from the training set were missplaced.</p>
-<pre class="r"><code>pred &lt;- predict(trainingFit, newdata = training);
-training$predRight &lt;- pred==training$classe
-table(pred,training$classe)</code></pre>
+<pre class="r"><code>pred &lt;- predict(trainingFit, newdata = trainingUsedForTesting);
+trainingUsedForTesting$predRight &lt;- pred==trainingUsedForTesting$classe
+table(pred,trainingUsedForTesting$classe)</code></pre>
 <pre><code>##     
 ## pred    A    B    C    D    E
-##    A 5580   47    0    0    0
-##    B    0 3750   25    0    0
-##    C    0    0 3397   68    0
-##    D    0    0    0 3087    0
-##    E    0    0    0   61 3607</code></pre>
-<p>Since the sample was only a small part out of all training data this is more than great result. This can be reduce more by training on bigger sample.</p>
-<p>Apply prediction model to testing data.</p>
+##    A 5531   47    0    0    0
+##    B    0 3706   25    0    0
+##    C    0    0 3359   68    0
+##    D    0    0    0 3053    0
+##    E    0    0    0   61 3572</code></pre>
+<p>It is easy to count how many missed out of total. And that is out of sample error: 201 / 19221 = 0.01045731.</p>
+<pre class="r"><code>summary(trainingUsedForTesting$predRight)</code></pre>
+<pre><code>##    Mode   FALSE    TRUE    NA's 
+## logical     201   19221       0</code></pre>
+<p>Finally apply prediction model to testing data.</p>
 <pre class="r"><code>predict(trainingFit, newdata=testing)</code></pre>
 <pre><code>##  [1] A A A A A A A A A A A A A A A A A A A A
 ## Levels: A B C D E</code></pre>

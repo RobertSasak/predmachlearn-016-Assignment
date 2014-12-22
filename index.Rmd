@@ -5,7 +5,7 @@ output: html_document
 
 Lets start by loading R packages.
 
-```{r, echo=FALSE}
+```{r}
 set.seed(1)
 library(caret)
 ```
@@ -28,10 +28,12 @@ trainingFiltered <- na.omit(trainingFiltered)
 length(importantColumns)
 ```
 
-Number of columns went down to 61. However there is still more than 19000 rows in training. Lets reduce it to something reasonable smaller subset.
+Number of columns went down to 61. However there is still more than 19000 rows in training. Lets reduce it to something reasonable smaller subset and keep the rest.
 
 ```{r}
-trainingSample <- trainingFiltered[sample(1:nrow(trainingFiltered), 200, replace=FALSE),]
+sample <- sample(1:nrow(trainingFiltered), 200, replace=FALSE)
+trainingSample <- trainingFiltered[sample,]
+trainingUsedForTesting <- trainingFiltered[-sample,]
 ```
 
 Data are not really linear. Train with random forest.
@@ -50,14 +52,18 @@ trainingFit$results$Accuracy
 Lets see how many from the training set were missplaced.
 
 ```{r}
-pred <- predict(trainingFit, newdata = training);
-training$predRight <- pred==training$classe
-table(pred,training$classe)
+pred <- predict(trainingFit, newdata = trainingUsedForTesting);
+trainingUsedForTesting$predRight <- pred==trainingUsedForTesting$classe
+table(pred,trainingUsedForTesting$classe)
 ```
 
-Since the sample was only a small part out of all training data this is more than great result. This can be reduce more by training on bigger sample. 
+It is easy to count how many missed out of total. And that is out of sample error: 201 / 19221 = 0.01045731.
 
-Apply prediction model to testing data.
+```{r}
+summary(trainingUsedForTesting$predRight)
+```
+
+Finally apply prediction model to testing data.
 
 ```{r}
 predict(trainingFit, newdata=testing)

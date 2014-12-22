@@ -12,9 +12,13 @@ trainingFiltered <- training[, names(training) %in% importantColumns]
 
 trainingFiltered <- na.omit(trainingFiltered)
 
-trainingSample <- trainingFiltered[sample(1:nrow(trainingFiltered), 2000, replace=FALSE),]
+trainingSample <- trainingFiltered[sample(1:nrow(trainingFiltered), 200, replace=FALSE),]
 
 trainingFit <- train(classe ~ ., data = trainingSample, method = "rf", prox=TRUE)
 trainingFit
 
 predict(trainingFit, newdata=testing)
+
+pred <- predict(trainingFit, newdata = trainingUsedForTesting);
+trainingUsedForTesting$predRight <- pred==trainingUsedForTesting$classe
+table(pred,trainingUsedForTesting$classe)
